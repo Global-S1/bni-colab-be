@@ -20,6 +20,11 @@ export class AuthController {
     return this.authService.setupFirstRoot(body);
   }
 
+  @Post('register')
+  async registerUser(@Body() body: { email: string; name?: string }) {
+    return this.authService.registerNewUser(body);
+  }
+
   @Post('magic-link')
   async requestMagicLink(@Body() body: { email: string }) {
     return this.authService.requestMagicLink(body.email);

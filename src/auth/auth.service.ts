@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, UnauthorizedException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, UnauthorizedException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -8,6 +8,7 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
+  private readonly logger = new Logger(AuthService.name);
   private transporter: nodemailer.Transporter;
 
   constructor(
@@ -44,7 +45,7 @@ export class AuthService implements OnModuleInit {
   }
 
   // Crear el primer Root Admin si la plataforma no cuenta con uno
-  async setupFirstRoot(dto: { email: string; name?: string }): Promise<{ message: string; user: any; accessToken: string }> {
+  async setupFirstRoot(dto: { email: string; name?: string }): Promise<{ message: string; user: any; accessToken: string; welcomeMagicUrl?: string }> {
     const count = await this.userRepository.count({ where: { systemRole: SystemRole.SUPER_ADMIN } });
     if (count > 0) {
       throw new ForbiddenException('La plataforma ya cuenta con un Administrador Root registrado.');
@@ -73,6 +74,9 @@ export class AuthService implements OnModuleInit {
 
     const savedUser = await this.userRepository.save(user);
 
+    // Enviar correo de bienvenida con enlace mágico al Root recién creado
+    const welcomeMagicUrl = await this.sendWelcomeEmailWithMagicLink(savedUser);
+
     const sessionPayload = {
       sub: savedUser.id,
       email: savedUser.email,
@@ -81,7 +85,7 @@ export class AuthService implements OnModuleInit {
     const accessToken = this.jwtService.sign(sessionPayload, { expiresIn: '30d' });
 
     return {
-      message: 'Administrador Root creado exitosamente. Acceso concedido.',
+      message: 'Administrador Root creado exitosamente. Se ha enviado un correo de bienvenida con tu enlace mágico.',
       user: {
         id: savedUser.id,
         email: savedUser.email,
@@ -89,6 +93,110 @@ export class AuthService implements OnModuleInit {
         systemRole: savedUser.systemRole,
       },
       accessToken,
+      welcomeMagicUrl: process.env.NODE_ENV !== 'production' || !process.env.SMTP_PASS ? welcomeMagicUrl : undefined,
+    };
+  }
+
+  async sendWelcomeEmailWithMagicLink(user: User): Promise<string> {
+    const payload = { sub: user.id, email: user.email, type: 'MAGIC_LINK', isWelcome: true };
+    const magicToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4322');
+    const magicUrl = `${frontendUrl}/auth/verify?token=${magicToken}`;
+
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <bnitech@globals.one>'),
+        to: user.email,
+        subject: '🎉 ¡Bienvenido a BNI Colab! Tu Enlace Mágico de Primer Acceso',
+        html: `
+          <div style="background-color: #0F0F12; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff;">
+            <div style="max-width: 550px; margin: 0 auto; background: #1A1A24; border-radius: 24px; padding: 36px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: inline-block; background: #FFFFFF; color: #D40000; font-weight: 900; font-size: 24px; padding: 10px 24px; border-radius: 16px; letter-spacing: -0.5px;">
+                  BNI <span style="color: #D40000;">Colab</span>
+                </div>
+              </div>
+
+              <h2 style="color: #FFFFFF; margin-top: 10px; font-size: 24px; font-weight: 800; text-align: center; letter-spacing: -0.5px;">
+                ¡Bienvenido a la Plataforma! 🎉
+              </h2>
+
+              <p style="color: #E2E8F0; font-size: 15px; line-height: 1.7; margin-top: 20px;">
+                Hola <strong style="color: #FFFFFF;">${user.name || user.email}</strong>,
+              </p>
+
+              <p style="color: #CBD5E1; font-size: 15px; line-height: 1.7;">
+                Tu cuenta ha sido registrada exitosamente en <strong>BNI Colab</strong>. A partir de ahora podrás colaborar con tu equipo en la gestión de tareas, proyectos, repositorio de documentos y reuniones.
+              </p>
+
+              <p style="color: #CBD5E1; font-size: 15px; line-height: 1.7;">
+                Usa el siguiente botón para realizar tu <strong>primer acceso directo sin contraseña</strong>:
+              </p>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${magicUrl}" style="background: linear-gradient(135deg, #D40000 0%, #8B0000 100%); color: #ffffff; padding: 16px 36px; text-decoration: none; font-size: 15px; font-weight: 800; border-radius: 14px; display: inline-block; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 8px 25px rgba(212,0,0,0.4);">
+                  Ingresar por Primera Vez
+                </a>
+              </div>
+
+              <p style="color: #94A3B8; font-size: 13px; text-align: center; line-height: 1.5;">
+                🔒 Este primer enlace de bienvenida es único y seguro.<br/>
+                Si la opción del botón no abre automáticamente, puedes copiar el siguiente enlace en tu navegador:
+              </p>
+              <div style="background: #121117; padding: 12px; border-radius: 10px; font-size: 11px; word-break: break-all; color: #D40000; text-align: center; margin-top: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                ${magicUrl}
+              </div>
+
+              <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0 20px 0;" />
+              <p style="color: #64748B; font-size: 12px; text-align: center;">
+                &copy; ${new Date().getFullYear()} Global S1 • BNI TECH Platform
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      this.logger.log(`[AuthService] Correo de Bienvenida enviado con éxito a ${user.email}`);
+    } catch (error) {
+      this.logger.error(`[AuthService] Error enviando correo de bienvenida a ${user.email}:`, error);
+    }
+
+    return magicUrl;
+  }
+
+  async registerNewUser(dto: { email: string; name?: string }) {
+    const normalizedEmail = dto.email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new BadRequestException('El correo electrónico es requerido.');
+    }
+
+    let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    if (user) {
+      return this.requestMagicLink(normalizedEmail);
+    }
+
+    const totalUsers = await this.userRepository.count();
+    const isFirstUser = totalUsers === 0;
+
+    user = this.userRepository.create({
+      email: normalizedEmail,
+      name: dto.name || normalizedEmail.split('@')[0],
+      systemRole: isFirstUser ? SystemRole.SUPER_ADMIN : SystemRole.USER,
+      status: UserStatus.INVITED,
+      metadata: { registeredAt: new Date().toISOString() },
+    });
+
+    const savedUser = await this.userRepository.save(user);
+    const magicUrl = await this.sendWelcomeEmailWithMagicLink(savedUser);
+
+    return {
+      message: '¡Registro exitoso! Te hemos enviado un correo de bienvenida con tu primer enlace mágico de acceso.',
+      magicUrl: process.env.NODE_ENV !== 'production' || !process.env.SMTP_PASS ? magicUrl : undefined,
+      user: {
+        id: savedUser.id,
+        email: savedUser.email,
+        name: savedUser.name,
+      },
     };
   }
 
@@ -248,6 +356,8 @@ export class AuthService implements OnModuleInit {
   async preRegisterUser(dto: { email: string; name?: string; systemRole?: SystemRole; metadata?: Record<string, any> }) {
     const normalizedEmail = dto.email.trim().toLowerCase();
     let user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    const isNewUser = !user;
+
     if (user) {
       user.name = dto.name || user.name;
       user.systemRole = dto.systemRole || user.systemRole;
@@ -261,7 +371,18 @@ export class AuthService implements OnModuleInit {
         metadata: dto.metadata || {},
       });
     }
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    let welcomeMagicUrl: string | undefined;
+    if (isNewUser || savedUser.status === UserStatus.INVITED) {
+      welcomeMagicUrl = await this.sendWelcomeEmailWithMagicLink(savedUser);
+    }
+
+    return {
+      ...savedUser,
+      welcomeEmailSent: true,
+      welcomeMagicUrl: process.env.NODE_ENV !== 'production' || !process.env.SMTP_PASS ? welcomeMagicUrl : undefined,
+    };
   }
 
   async getAllUsers() {
