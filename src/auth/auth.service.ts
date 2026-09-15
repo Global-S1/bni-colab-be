@@ -35,7 +35,7 @@ export class AuthService implements OnModuleInit {
   async onModuleInit() {
     // Si no hay ningún SUPER_ADMIN, no auto-creamos para que la plataforma permita al usuario crear el primer root
     const rootCount = await this.userRepository.count({ where: { systemRole: SystemRole.SUPER_ADMIN } });
-    console.log(`[BNI Colab] Conteo de usuarios SUPER_ADMIN registrados: ${rootCount}`);
+    console.log(`[BNITECH Colab] Conteo de usuarios SUPER_ADMIN registrados: ${rootCount}`);
   }
 
   // Comprobar si existe al menos un usuario root en la plataforma
@@ -106,15 +106,15 @@ export class AuthService implements OnModuleInit {
 
     try {
       await this.transporter.sendMail({
-        from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <bnitech@globals.one>'),
+        from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <bnitech@globals.one>'),
         to: user.email,
-        subject: '🎉 ¡Bienvenido a BNI Colab! Tu Enlace Mágico de Primer Acceso',
+        subject: '🎉 ¡Bienvenido a BNITECH Colab! Tu Enlace Mágico de Primer Acceso',
         html: `
           <div style="background-color: #0F0F12; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff;">
             <div style="max-width: 550px; margin: 0 auto; background: #1A1A24; border-radius: 24px; padding: 36px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
               <div style="text-align: center; margin-bottom: 24px;">
                 <div style="display: inline-block; background: #FFFFFF; color: #D40000; font-weight: 900; font-size: 24px; padding: 10px 24px; border-radius: 16px; letter-spacing: -0.5px;">
-                  BNI <span style="color: #D40000;">Colab</span>
+                  BNITECH <span style="color: #D40000;">Colab</span>
                 </div>
               </div>
 
@@ -127,7 +127,7 @@ export class AuthService implements OnModuleInit {
               </p>
 
               <p style="color: #CBD5E1; font-size: 15px; line-height: 1.7;">
-                Tu cuenta ha sido registrada exitosamente en <strong>BNI Colab</strong>. A partir de ahora podrás colaborar con tu equipo en la gestión de tareas, proyectos, repositorio de documentos y reuniones.
+                Tu cuenta ha sido registrada exitosamente en <strong>BNITECH Colab</strong>. A partir de ahora podrás colaborar con tu equipo en la gestión de tareas, proyectos, repositorio de documentos y reuniones.
               </p>
 
               <p style="color: #CBD5E1; font-size: 15px; line-height: 1.7;">
@@ -150,7 +150,7 @@ export class AuthService implements OnModuleInit {
 
               <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0 20px 0;" />
               <p style="color: #64748B; font-size: 12px; text-align: center;">
-                &copy; ${new Date().getFullYear()} Global S1 • BNI TECH Platform
+                &copy; ${new Date().getFullYear()} Global S1 • BNITECH Platform
               </p>
             </div>
           </div>
@@ -223,15 +223,15 @@ export class AuthService implements OnModuleInit {
     // Enviar correo con la plantilla Branded Global S1 (Rojo, Blanco, Negro)
     try {
       await this.transporter.sendMail({
-        from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <bnitech@globals.one>'),
+        from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <bnitech@globals.one>'),
         to: user.email,
-        subject: '🚀 Tu Enlace Mágico de Acceso a BNI Colab',
+        subject: '🚀 Tu Enlace Mágico de Acceso a BNITECH Colab',
         html: `
           <div style="background-color: #0A0A0A; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff;">
             <div style="max-width: 550px; margin: 0 auto; background: #141414; border-radius: 16px; padding: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
               <div style="text-align: center; margin-bottom: 20px;">
                 <div style="display: inline-block; background: #CF142B; color: #FFFFFF; font-weight: 800; font-size: 24px; padding: 8px 18px; border-radius: 12px;">
-                  BNI Colab
+                  BNITECH Colab
                 </div>
               </div>
               <h2 style="color: #FFFFFF; margin-top: 0; font-size: 22px; font-weight: bold; text-align: center;">Acceso Seguro</h2>
@@ -239,7 +239,7 @@ export class AuthService implements OnModuleInit {
               <p style="color: #E5E5E5; font-size: 15px; line-height: 1.6;">Haz clic en el siguiente botón para ingresar a la plataforma colaborativa de proyectos y equipos:</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${magicUrl}" style="background-color: #CF142B; color: #ffffff; padding: 14px 30px; text-decoration: none; font-size: 15px; font-weight: bold; border-radius: 10px; display: inline-block; box-shadow: 0 4px 15px rgba(207,20,43,0.5);">
-                  Ingresar a BNI Colab
+                  Ingresar a BNITECH Colab
                 </a>
               </div>
               <p style="color: #A3A3A3; font-size: 13px; text-align: center;">Este enlace expira en 15 minutos.</p>

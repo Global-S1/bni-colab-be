@@ -144,13 +144,13 @@ export class MeetingsService {
 
     const titleEscaped = meeting.title.replace(/,/g, '\\,').replace(/;/g, '\\;');
     const descEscaped = (meeting.description || `Reunión de equipo: ${team.name}`).replace(/\n/g, '\\n').replace(/,/g, '\\,');
-    const locationEscaped = (meeting.meetingUrl || meeting.location || 'Enlace en plataforma BNI Colab').replace(/,/g, '\\,');
+    const locationEscaped = (meeting.meetingUrl || meeting.location || 'Enlace en plataforma BNITECH Colab').replace(/,/g, '\\,');
 
     // Generate standard RFC 5545 iCalendar content
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//BNI Colab//Calendario de Equipos//ES',
+      'PRODID:-//BNITECH Colab//Calendario de Equipos//ES',
       'CALSCALE:GREGORIAN',
       'METHOD:REQUEST',
       'BEGIN:VEVENT',
@@ -161,7 +161,7 @@ export class MeetingsService {
       `SUMMARY:${titleEscaped}`,
       `DESCRIPTION:${descEscaped}`,
       `LOCATION:${locationEscaped}`,
-      `ORGANIZER;CN=${creator?.name || 'BNI Colab'}:mailto:${creator?.email || 'noreply@globals1.com'}`,
+      `ORGANIZER;CN=${creator?.name || 'BNITECH Colab'}:mailto:${creator?.email || 'noreply@globals1.com'}`,
       'STATUS:CONFIRMED',
       'SEQUENCE:0',
       'END:VEVENT',
@@ -224,7 +224,7 @@ export class MeetingsService {
         <body>
           <div class="card">
             <div class="header">
-              <h1>BNI TECH COLAB</h1>
+              <h1>BNITECH COLAB</h1>
               <p>Convocatoria de Reunión de Equipo</p>
             </div>
             <div class="content">
@@ -278,7 +278,7 @@ export class MeetingsService {
               </p>
             </div>
             <div class="footer">
-              Enviado autom&aacute;ticamente por BNI Colab &bull; Global S1<br>
+              Enviado autom&aacute;ticamente por BNITECH Colab &bull; Global S1<br>
               Organizador: ${creator?.name || 'Administrador del Equipo'}
             </div>
           </div>
@@ -288,7 +288,7 @@ export class MeetingsService {
 
       try {
         await this.transporter.sendMail({
-          from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <bnitech@globals.one>'),
+          from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <bnitech@globals.one>'),
           to: user.email,
           subject: `📅 Invitación: ${meeting.title} - ${team.name}`,
           html,

@@ -377,9 +377,9 @@ export class TasksService {
       if (!assignee || !assignee.email) return;
 
       await this.transporter.sendMail({
-        from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <bnitech@globals.one>'),
+        from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <bnitech@globals.one>'),
         to: assignee.email,
-        subject: `📋 Te han asignado una tarea en BNI Colab: ${task.title}`,
+        subject: `📋 Te han asignado una tarea en BNITECH Colab: ${task.title}`,
         html: `
           <div style="background-color: #0B132B; padding: 40px 20px; font-family: sans-serif; color: #ffffff;">
             <div style="max-width: 550px; margin: 0 auto; background: #1C2541; border-radius: 16px; padding: 32px; border: 1px solid rgba(255,255,255,0.1);">

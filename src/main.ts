@@ -19,8 +19,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('BNI Colab API')
-    .setDescription('Backend API para la plataforma colaborativa de equipos, proyectos y tareas de BNI / Global S1')
+    .setTitle('BNITECH Colab API')
+    .setDescription('Backend API para la plataforma colaborativa de equipos, proyectos y tareas de BNITECH / Global S1')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -30,7 +30,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3002;
   await app.listen(port);
-  console.log(`🚀 BNI Colab Backend iniciado en: http://localhost:${port}`);
+  console.log(`🚀 BNITECH Colab Backend iniciado en: http://localhost:${port}`);
   console.log(`📄 Documentación Swagger disponible en: http://localhost:${port}/api/docs`);
 }
 bootstrap();

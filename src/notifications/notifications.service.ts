@@ -85,9 +85,9 @@ export class NotificationsService {
 
       try {
         await this.transporter.sendMail({
-          from: this.configService.get<string>('SMTP_FROM', 'BNI Colab <noreply@globals1.com>'),
+          from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <noreply@globals1.com>'),
           to: assignee.email,
-          subject: `⏰ BNI Colab: Tienes ${userTasks.length} tarea(s) por vencer hoy`,
+          subject: `⏰ BNITECH Colab: Tienes ${userTasks.length} tarea(s) por vencer hoy`,
           html: `
             <div style="background-color: #0B132B; padding: 30px; font-family: sans-serif; color: #ffffff;">
               <div style="max-width: 500px; margin: 0 auto; background: #1C2541; padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
@@ -95,7 +95,7 @@ export class NotificationsService {
                 <p>Hola <strong>${assignee.name || assignee.email}</strong>,</p>
                 <p>Tienes las siguientes tareas pendientes o por vencer:</p>
                 <ul style="color: #E0E1DD;">${tasksHtml}</ul>
-                <p style="font-size: 12px; color: #8D99AE; text-align: center; margin-top: 20px;">BNI Colab — Plataforma de Colaboración de Equipos</p>
+                <p style="font-size: 12px; color: #8D99AE; text-align: center; margin-top: 20px;">BNITECH Colab — Plataforma de Colaboración de Equipos</p>
               </div>
             </div>
           `,
