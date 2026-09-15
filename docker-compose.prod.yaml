@@ -1,7 +1,7 @@
 services:
-  colab-db-prod.bnitech.online:
+  colab-db-prod_bnitech_online:
     image: postgres:16-alpine
-    container_name: colab-db-prod.bnitech.online
+    container_name: colab-db-prod_bnitech_online
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_DATABASE:-bni_colab}
@@ -12,18 +12,18 @@ services:
     volumes:
       - pgdata_colab_prod:/var/lib/postgresql/data
 
-  colab-be-prod.bnitech.online:
+  colab-be-prod_bnitech_online:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: colab-be-prod.bnitech.online
+    container_name: colab-be-prod_bnitech_online
     restart: unless-stopped
     ports:
       - "${PORT:-3002}:3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - DB_HOST=${DB_HOST:-colab-db-prod.bnitech.online}
+      - DB_HOST=${DB_HOST:-colab-db-prod_bnitech_online}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
@@ -32,7 +32,7 @@ services:
       - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:3002}
       - PUBLIC_FRONTEND_URL=${PUBLIC_FRONTEND_URL:-http://localhost:4322}
     depends_on:
-      - colab-db-prod.bnitech.online
+      - colab-db-prod_bnitech_online
 
 volumes:
   pgdata_colab_prod:
