@@ -26,11 +26,24 @@ export class DocumentsController {
 
   @Get('files/:filename(*)')
   async serveFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = path.join(process.cwd(), 'uploads', filename);
-    if (!fs.existsSync(filePath)) {
+    if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
       throw new NotFoundException('Archivo no encontrado');
     }
-    return res.sendFile(filePath);
+
+    // Copia local primero; si no existe (p. ej. tras un redeploy), se lee del bucket privado
+    const filePath = path.join(process.cwd(), 'uploads', filename);
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+
+    try {
+      const file = await this.documentsService.getS3File(filename);
+      if (file.contentType) res.setHeader('Content-Type', file.contentType);
+      if (file.contentLength) res.setHeader('Content-Length', String(file.contentLength));
+      file.stream.pipe(res);
+    } catch {
+      throw new NotFoundException('Archivo no encontrado');
+    }
   }
 
   @UseGuards(JwtAuthGuard)

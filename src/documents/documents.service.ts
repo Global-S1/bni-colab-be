@@ -5,7 +5,8 @@ import { Document } from './document.entity';
 import { ProjectsService } from '../projects/projects.service';
 import { User } from '../users/user.entity';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -44,9 +45,27 @@ export class DocumentsService {
     });
 
     const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 900 });
-    const publicUrl = `https://${bucket}.s3.amazonaws.com/${key}`;
+    // Bucket privado: el archivo se sirve a través del backend, no directo desde S3
+    const publicUrl = this.buildFileUrl(key.replace('projects/documents/', ''));
 
     return { uploadUrl, publicUrl, key };
+  }
+
+  private buildFileUrl(filename: string) {
+    const backendUrl = this.configService.get<string>('PUBLIC_BACKEND_URL', 'http://localhost:3002');
+    return `${backendUrl}/api/v1/documents/files/${filename}`;
+  }
+
+  async getS3File(filename: string) {
+    const bucket = this.configService.get<string>('AWS_S3_BUCKET', 'guest-files.bnitech.online');
+    const result = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: bucket, Key: `projects/documents/${filename}` }),
+    );
+    return {
+      stream: result.Body as Readable,
+      contentType: result.ContentType,
+      contentLength: result.ContentLength,
+    };
   }
 
   async uploadDirectBuffer(
@@ -68,8 +87,7 @@ export class DocumentsService {
     const localFilePath = path.join(uploadsDir, filename);
     fs.writeFileSync(localFilePath, file.buffer);
 
-    const backendUrl = this.configService.get<string>('PUBLIC_BACKEND_URL', 'http://localhost:3002');
-    let publicUrl = `${backendUrl}/api/v1/documents/files/${filename}`;
+    const publicUrl = this.buildFileUrl(filename);
 
     try {
       const command = new PutObjectCommand({
@@ -79,7 +97,6 @@ export class DocumentsService {
         ContentType: file.mimetype,
       });
       await this.s3Client.send(command);
-      publicUrl = `https://${bucket}.s3.amazonaws.com/projects/documents/${filename}`;
     } catch (err) {
       this.logger.warn('S3 upload fallback: usando almacenamiento local servido en NestJS backend', err);
     }
