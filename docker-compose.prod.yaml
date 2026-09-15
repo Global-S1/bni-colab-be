@@ -6,9 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_DATABASE:-bni_colab}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata_colab_prod:/var/lib/postgresql/data
 
@@ -18,21 +16,43 @@ services:
       dockerfile: Dockerfile
     container_name: colab-be-prod_bnitech_online
     restart: unless-stopped
-    ports:
-      - "${PORT:-3002}:3002"
+    expose:
+      - "3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
       - DB_HOST=${DB_HOST:-colab-db-prod_bnitech_online}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${DB_DATABASE:-bni_colab}
-      - JWT_SECRET=${JWT_SECRET:-prod_secret_key_12345}
-      - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:3002}
-      - PUBLIC_FRONTEND_URL=${PUBLIC_FRONTEND_URL:-http://localhost:4322}
+      - JWT_SECRET=${JWT_SECRET}
+      - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-https://colab.bnitech.online}
+      - PUBLIC_FRONTEND_URL=${PUBLIC_FRONTEND_URL:-https://colab.bnitech.online}
+      - FRONTEND_URL=${FRONTEND_URL:-https://colab.bnitech.online}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECURE=${SMTP_SECURE}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - INITIAL_SUPERADMIN_EMAIL=${INITIAL_SUPERADMIN_EMAIL}
+    networks:
+      default:
+      coolify:
+        aliases:
+          - colab-be-prod_bnitech_online
     depends_on:
       - colab-db-prod_bnitech_online
 
 volumes:
   pgdata_colab_prod:
+
+networks:
+  coolify:
+    external: true
+    name: coolify
