@@ -1,6 +1,6 @@
 {
   "name": "bni-colab-be",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend API para BNI Colab - Plataforma Colaborativa de Equipos, Proyectos, Tareas y Documentos",
   "private": true,
   "scripts": {
