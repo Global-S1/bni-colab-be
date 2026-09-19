@@ -100,8 +100,20 @@ export class DocumentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('project/:projectId/history')
+  async getDeletedDocumentsForProject(@Request() req, @Param('projectId') projectId: string) {
+    return this.documentsService.getDeletedDocumentsForProject(projectId, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteDocument(@Request() req, @Param('id') id: string) {
     return this.documentsService.deleteDocument(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/restore')
+  async restoreDocument(@Request() req, @Param('id') id: string) {
+    return this.documentsService.restoreDocument(id, req.user.userId);
   }
 }

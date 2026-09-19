@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn } from 'typeorm';
 
 @Entity('documents')
 export class Document {
@@ -37,4 +37,10 @@ export class Document {
 
   @CreateDateColumn()
   uploadedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
+
+  @Column({ nullable: true })
+  deletedBy: string | null;
 }

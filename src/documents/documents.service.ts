@@ -172,13 +172,49 @@ export class DocumentsService {
     }));
   }
 
+  async getDeletedDocumentsForProject(projectId: string, userId: string) {
+    await this.projectsService.getProjectById(projectId, userId);
+    const docs = await this.documentRepository.find({
+      where: { projectId },
+      withDeleted: true,
+      order: { deletedAt: 'DESC' },
+    });
+    const deletedDocs = docs.filter(d => d.deletedAt !== null);
+
+    const userIds = Array.from(new Set(deletedDocs.flatMap((d) => [d.uploadedBy, d.deletedBy]).filter(Boolean) as string[]));
+    const users = userIds.length > 0 ? await this.userRepository.find({ where: { id: In(userIds) } }) : [];
+    const userMap = new Map(users.map((u) => [u.id, { id: u.id, name: u.name, email: u.email }]));
+
+    return deletedDocs.map((d) => ({
+      ...d,
+      uploader: d.uploadedBy ? userMap.get(d.uploadedBy) || { id: d.uploadedBy, name: 'Usuario', email: '' } : null,
+      deleter: d.deletedBy ? userMap.get(d.deletedBy) || { id: d.deletedBy, name: 'Usuario', email: '' } : null,
+    }));
+  }
+
   async deleteDocument(documentId: string, userId: string) {
     const doc = await this.documentRepository.findOne({ where: { id: documentId } });
     if (!doc) {
       throw new NotFoundException('Documento no encontrado');
     }
     await this.projectsService.getProjectById(doc.projectId, userId);
-    await this.documentRepository.remove(doc);
+    
+    doc.deletedBy = userId;
+    await this.documentRepository.save(doc);
+    await this.documentRepository.softRemove(doc);
     return { message: 'Documento eliminado correctamente' };
+  }
+
+  async restoreDocument(documentId: string, userId: string) {
+    const doc = await this.documentRepository.findOne({ where: { id: documentId }, withDeleted: true });
+    if (!doc) {
+      throw new NotFoundException('Documento no encontrado');
+    }
+    await this.projectsService.getProjectById(doc.projectId, userId);
+    
+    doc.deletedAt = null;
+    doc.deletedBy = null;
+    await this.documentRepository.save(doc);
+    return { message: 'Documento restaurado correctamente' };
   }
 }
