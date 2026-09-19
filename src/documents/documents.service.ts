@@ -44,7 +44,7 @@ export class DocumentsService {
     });
 
     const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 900 });
-    const publicUrl = `https://${bucket}.s3.amazonaws.com/${key}`;
+    const publicUrl = bucket.includes(".") ? `https://s3.amazonaws.com/${bucket}/${key}` : `https://${bucket}.s3.amazonaws.com/${key}`;
 
     return { uploadUrl, publicUrl, key };
   }
@@ -79,7 +79,7 @@ export class DocumentsService {
         ContentType: file.mimetype,
       });
       await this.s3Client.send(command);
-      publicUrl = `https://${bucket}.s3.amazonaws.com/projects/documents/${filename}`;
+      publicUrl = bucket.includes(".") ? `https://s3.amazonaws.com/${bucket}/projects/documents/${filename}` : `https://${bucket}.s3.amazonaws.com/projects/documents/${filename}`;
     } catch (err) {
       this.logger.warn('S3 upload fallback: usando almacenamiento local servido en NestJS backend', err);
     }
