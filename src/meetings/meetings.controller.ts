@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -20,6 +21,11 @@ export class MeetingsController {
   @Post()
   async create(@Request() req, @Body() dto: CreateMeetingDto) {
     return this.meetingsService.create(req.user.userId, dto);
+  }
+
+  @Put(':id')
+  async update(@Request() req, @Param('id') id: string, @Body() dto: CreateMeetingDto) {
+    return this.meetingsService.update(id, req.user.userId, dto);
   }
 
   @Get()

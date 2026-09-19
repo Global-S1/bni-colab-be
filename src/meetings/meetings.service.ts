@@ -87,6 +87,43 @@ export class MeetingsService {
     return saved;
   }
 
+  async update(meetingId: string, userId: string, dto: CreateMeetingDto) {
+    const meeting = await this.meetingRepository.findOne({ where: { id: meetingId } });
+    if (!meeting) {
+      throw new NotFoundException('Reunión no encontrada');
+    }
+
+    const team = await this.teamRepository.findOne({ where: { id: dto.teamId } });
+    if (!team) {
+      throw new NotFoundException('Equipo no encontrado');
+    }
+
+    let project: Project | null = null;
+    if (dto.projectId) {
+      project = await this.projectRepository.findOne({ where: { id: dto.projectId } });
+    }
+
+    const creator = await this.userRepository.findOne({ where: { id: userId } });
+
+    meeting.title = dto.title;
+    meeting.description = dto.description;
+    meeting.startTime = new Date(dto.startTime);
+    meeting.endTime = new Date(dto.endTime);
+    meeting.meetingUrl = dto.meetingUrl;
+    meeting.location = dto.location;
+    meeting.teamId = dto.teamId;
+    meeting.projectId = dto.projectId || null;
+
+    const saved = await this.meetingRepository.save(meeting);
+
+    // Asynchronously send notification emails with .ics and calendar links to all team members
+    this.notifyMembers(saved, team, project, creator, true).catch((err) => {
+      this.logger.error('Error enviando actualizaciones de reunión por correo', err);
+    });
+
+    return saved;
+  }
+
   async findAllForUser(userId: string) {
     // Find all teams user belongs to
     const memberships = await this.teamMemberRepository.find({ where: { userId } });
@@ -124,7 +161,7 @@ export class MeetingsService {
     return this.meetingRepository.remove(meeting);
   }
 
-  private async notifyMembers(meeting: Meeting, team: Team, project: Project | null, creator: User | null) {
+  private async notifyMembers(meeting: Meeting, team: Team, project: Project | null, creator: User | null, isUpdate: boolean = false) {
     const memberships = await this.teamMemberRepository.find({ where: { teamId: team.id } });
     const memberIds = memberships.map((m) => m.userId);
     if (memberIds.length === 0) return;
@@ -146,6 +183,9 @@ export class MeetingsService {
     const descEscaped = (meeting.description || `Reunión de equipo: ${team.name}`).replace(/\n/g, '\\n').replace(/,/g, '\\,');
     const locationEscaped = (meeting.meetingUrl || meeting.location || 'Enlace en plataforma BNITECH Colab').replace(/,/g, '\\,');
 
+    const sequence = isUpdate ? '1' : '0';
+    const titlePrefix = isUpdate ? 'ACTUALIZACIÓN: ' : '';
+
     // Generate standard RFC 5545 iCalendar content
     const icsContent = [
       'BEGIN:VCALENDAR',
@@ -158,12 +198,12 @@ export class MeetingsService {
       `DTSTAMP:${nowICS}`,
       `DTSTART:${startICS}`,
       `DTEND:${endICS}`,
-      `SUMMARY:${titleEscaped}`,
+      `SUMMARY:${titlePrefix}${titleEscaped}`,
       `DESCRIPTION:${descEscaped}`,
       `LOCATION:${locationEscaped}`,
       `ORGANIZER;CN=${creator?.name || 'BNITECH Colab'}:mailto:${creator?.email || 'noreply@globals1.com'}`,
       'STATUS:CONFIRMED',
-      'SEQUENCE:0',
+      `SEQUENCE:${sequence}`,
       'END:VEVENT',
       'END:VCALENDAR',
     ].join('\r\n');
@@ -192,6 +232,9 @@ export class MeetingsService {
     });
     const prettyStartTime = startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     const prettyEndTime = endDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    const headerTitle = isUpdate ? 'Actualización de Reunión' : 'Convocatoria de Reunión de Equipo';
+    const emailSubject = isUpdate ? `🔄 Actualización: ${meeting.title} - ${team.name}` : `📅 Invitación: ${meeting.title} - ${team.name}`;
 
     for (const user of users) {
       if (!user.email) continue;
@@ -225,7 +268,7 @@ export class MeetingsService {
           <div class="card">
             <div class="header">
               <h1>BNITECH COLAB</h1>
-              <p>Convocatoria de Reunión de Equipo</p>
+              <p>${headerTitle}</p>
             </div>
             <div class="content">
               <span class="badge">${team.name} ${project ? `&bull; ${project.name}` : ''}</span>
@@ -290,7 +333,7 @@ export class MeetingsService {
         await this.transporter.sendMail({
           from: this.configService.get<string>('SMTP_FROM', 'BNITECH Colab <bnitech@globals.one>'),
           to: user.email,
-          subject: `📅 Invitación: ${meeting.title} - ${team.name}`,
+          subject: emailSubject,
           html,
           icalEvent: {
             filename: 'invitacion.ics',
