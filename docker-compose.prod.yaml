@@ -9,6 +9,10 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata_colab_prod:/var/lib/postgresql/data
+    networks:
+      coolify:
+        aliases:
+          - colab-db-prod_bnitech_online
 
   colab-be-prod_bnitech_online:
     build:
@@ -46,10 +50,12 @@ services:
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
       - INITIAL_SUPERADMIN_EMAIL=${INITIAL_SUPERADMIN_EMAIL}
     networks:
-      default:
       coolify:
         aliases:
           - colab-be-prod_bnitech_online
+          - colab-be-prod.bnitech.online
+          - colab-be-prod
+          - colab-be
     depends_on:
       - colab-db-prod_bnitech_online
 
