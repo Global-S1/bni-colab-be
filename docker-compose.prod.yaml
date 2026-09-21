@@ -16,6 +16,8 @@ services:
       dockerfile: Dockerfile
     container_name: colab-be-prod_bnitech_online
     restart: unless-stopped
+    ports:
+      - "3002:3002"
     expose:
       - "3002"
     volumes:
