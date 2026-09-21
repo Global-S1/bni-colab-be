@@ -29,7 +29,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3002;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`🚀 BNITECH Colab Backend iniciado en: http://localhost:${port}`);
   console.log(`📄 Documentación Swagger disponible en: http://localhost:${port}/api/docs`);
 }
