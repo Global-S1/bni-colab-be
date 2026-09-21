@@ -25,12 +25,26 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get('files/:filename(*)')
-  async serveFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = path.join(process.cwd(), 'uploads', filename);
-    if (!fs.existsSync(filePath)) {
+  async serveFile(@Param('filename') rawFilename: string, @Res() res: Response) {
+    const filename = (rawFilename || '').replace(/\/$/, '');
+    if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
       throw new NotFoundException('Archivo no encontrado');
     }
-    return res.sendFile(filePath);
+
+    // Copia local primero; si no existe (p. ej. tras un redeploy), se lee del bucket privado
+    const filePath = path.join(process.cwd(), 'uploads', filename);
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+
+    try {
+      const file = await this.documentsService.getS3File(filename);
+      if (file.contentType) res.setHeader('Content-Type', file.contentType);
+      if (file.contentLength) res.setHeader('Content-Length', String(file.contentLength));
+      file.stream.pipe(res);
+    } catch {
+      throw new NotFoundException('Archivo no encontrado');
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -87,8 +101,20 @@ export class DocumentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('project/:projectId/history')
+  async getDeletedDocumentsForProject(@Request() req, @Param('projectId') projectId: string) {
+    return this.documentsService.getDeletedDocumentsForProject(projectId, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteDocument(@Request() req, @Param('id') id: string) {
     return this.documentsService.deleteDocument(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/restore')
+  async restoreDocument(@Request() req, @Param('id') id: string) {
+    return this.documentsService.restoreDocument(id, req.user.userId);
   }
 }

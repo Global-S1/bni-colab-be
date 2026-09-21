@@ -150,6 +150,47 @@ export class TasksService {
     }));
   }
 
+  async getMyTasks(
+    userId: string,
+    filters?: { status?: TaskStatus; priority?: TaskPriority; search?: string },
+  ) {
+    const query = this.taskRepository.createQueryBuilder('task')
+      .where('task.assigneeId = :userId', { userId });
+
+    if (filters?.status) {
+      query.andWhere('task.status = :status', { status: filters.status });
+    }
+    if (filters?.priority) {
+      query.andWhere('task.priority = :priority', { priority: filters.priority });
+    }
+    if (filters?.search) {
+      query.andWhere('(task.title ILIKE :search OR task.description ILIKE :search)', {
+        search: `%${filters.search}%`,
+      });
+    }
+
+    const tasks = await query.orderBy('task.createdAt', 'DESC').getMany();
+
+    // Fallback code for legacy tasks
+    for (let i = 0; i < tasks.length; i++) {
+      if (!tasks[i].code) {
+        tasks[i].code = this.generateTaskCode(tasks[i].title, i);
+        await this.taskRepository.save(tasks[i]);
+      }
+    }
+
+    // Attach reporter and assignee summary
+    const userIds = Array.from(new Set(tasks.flatMap((t) => [t.reporterId, t.assigneeId].filter(Boolean) as string[])));
+    const users = userIds.length > 0 ? await this.userRepository.find({ where: { id: In(userIds) } }) : [];
+    const userMap = new Map(users.map((u) => [u.id, { id: u.id, name: u.name, email: u.email }]));
+
+    return tasks.map((t) => ({
+      ...t,
+      reporter: t.reporterId ? userMap.get(t.reporterId) : null,
+      assignee: t.assigneeId ? userMap.get(t.assigneeId) : null,
+    }));
+  }
+
   async getTaskById(taskId: string, userId: string) {
     const task = await this.taskRepository.findOne({ where: { id: taskId } });
     if (!task) {

@@ -39,6 +39,16 @@ export class TasksController {
     return this.tasksService.getTasksForProject(projectId, req.user.userId, { assigneeId, status, priority, search });
   }
 
+  @Get('my-tasks')
+  async getMyTasks(
+    @Request() req,
+    @Query('status') status?: TaskStatus,
+    @Query('priority') priority?: TaskPriority,
+    @Query('search') search?: string,
+  ) {
+    return this.tasksService.getMyTasks(req.user.userId, { status, priority, search });
+  }
+
   @Get(':id')
   async getTaskById(@Request() req, @Param('id') id: string) {
     return this.tasksService.getTaskById(id, req.user.userId);
