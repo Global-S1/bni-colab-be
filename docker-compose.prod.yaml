@@ -18,6 +18,8 @@ services:
     restart: unless-stopped
     expose:
       - "3002"
+    volumes:
+      - colab_uploads_prod:/app/uploads
     environment:
       - NODE_ENV=production
       - PORT=3002
@@ -51,6 +53,7 @@ services:
 
 volumes:
   pgdata_colab_prod:
+  colab_uploads_prod:
 
 networks:
   coolify:

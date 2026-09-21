@@ -25,7 +25,8 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get('files/:filename(*)')
-  async serveFile(@Param('filename') filename: string, @Res() res: Response) {
+  async serveFile(@Param('filename') rawFilename: string, @Res() res: Response) {
+    const filename = (rawFilename || '').replace(/\/$/, '');
     if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
       throw new NotFoundException('Archivo no encontrado');
     }
